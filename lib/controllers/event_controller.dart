@@ -7,19 +7,26 @@ class EventController {
 
   EventController(this.state);
 
+  // Called by GameController every time a stat is clicked
   void maybeTriggerEvent() {
     if (state.clicksSinceEvent < 50) return;
 
     // Reset counter
     state.clicksSinceEvent = 0;
 
-    // Pick random stat
+    // Choose random stat
     final keys = state.stats.keys.toList();
     String chosen = keys[rng.nextInt(keys.length)];
 
-    state.stats[chosen]!.add(10); // +10 points
+    // Apply event effect
+    state.stats[chosen]!.add(10);
 
-    // Notify UI
+    // Notify for UI
     state.notifyListeners();
+
+    // OPTIONAL: later we will show popup/dialog
+    // For now, logic only
+
+    state.eventLog.add("Alumni event boosted $chosen by +10!");
   }
 }

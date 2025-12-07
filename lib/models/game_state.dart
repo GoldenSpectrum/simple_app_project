@@ -79,6 +79,9 @@ class GameState extends ChangeNotifier {
     ),
   ];
 
+  List<String> eventLog = [];
+
+
   // Helper
   Stat getStat(String id) => stats[id]!;
 
