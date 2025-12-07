@@ -13,35 +13,71 @@ class GameState extends ChangeNotifier {
   int clicksSinceEvent = 0;
 
   double permanentClickBonus = 0.0; // prestige bonus
-  bool debuffActive = false;
 
+  // NEW: Passive generator levels (infinite upgradeable)
+  int passiveCompLevel = 0;
+  int passiveCompeteLevel = 0;
+  int passiveCommitLevel = 0;
+
+  // NEW: Duplication upgrade level
+  int duplicationLevel = 0;
+
+  // NEW: Infinite upgrades list
   List<Upgrade> upgrades = [
+    // -------------------------------
+    // CLICK POWER UPGRADES
+    // -------------------------------
     Upgrade(
       id: "click_power",
-      name: "Click Power +1",
-      description: "Increase all click values by +1.",
+      name: "Click Power",
+      description: "Increase all click values permanently.",
       type: UpgradeType.clickPower,
-      cost: 50,
+      costStat: "compassion",    // paid with Compassion points
+      baseCost: 30,
     ),
+
+    // -------------------------------
+    // PASSIVE GENERATORS
+    // -------------------------------
     Upgrade(
-      id: "passive_gen",
-      name: "Passive Generator",
-      description: "+1 point/sec to a chosen stat.",
-      type: UpgradeType.passiveGenerator,
-      cost: 100,
+      id: "passive_compassion",
+      name: "Passive: Compassion",
+      description: "+1/sec per level to Compassion.",
+      type: UpgradeType.passiveCompassion,
+      costStat: "compassion",
+      baseCost: 20,
     ),
+
     Upgrade(
-      id: "dupe_lite",
+      id: "passive_competence",
+      name: "Passive: Competence",
+      description: "+1/sec per level to Competence.",
+      type: UpgradeType.passiveCompetence,
+      costStat: "competence",
+      baseCost: 20,
+    ),
+
+    Upgrade(
+      id: "passive_commitment",
+      name: "Passive: Commitment",
+      description: "+1/sec per level to Commitment.",
+      type: UpgradeType.passiveCommitment,
+      costStat: "commitment",
+      baseCost: 20,
+    ),
+
+    // -------------------------------
+    // DUPLICATION LITE
+    // -------------------------------
+    Upgrade(
+      id: "duplication_lite",
       name: "Duplication Lite",
-      description: "10% chance each click gives +2 instead of +1.",
+      description: "Increase click duplication chance.",
       type: UpgradeType.duplicationLite,
-      cost: 75,
+      costStat: "commitment",
+      baseCost: 50,
     ),
   ];
-
-  String? passiveTarget; // which stat passive affects
-  bool passiveEnabled = false;
-
 
   // Helper
   Stat getStat(String id) => stats[id]!;
@@ -56,5 +92,4 @@ class GameState extends ChangeNotifier {
     }
     notifyListeners();
   }
-
 }

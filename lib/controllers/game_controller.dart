@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import '../models/game_state.dart';
 import '../models/upgrade.dart';
 import 'event_controller.dart';
@@ -6,11 +7,16 @@ import 'event_controller.dart';
 class GameController {
   final GameState state;
   final EventController events;
+
   Timer? passiveTimer;
 
+  GameController(this.state, this.events) {
+    _startPassiveLoop();
+  }
 
-  GameController(this.state, this.events);
-
+  // ----------------------------------------
+  //  MAIN CLICK HANDLER
+  // ----------------------------------------
   void onStatClicked(String statId) {
     state.totalClicks++;
     state.clicksSinceEvent++;
@@ -21,42 +27,69 @@ class GameController {
     double avg = _averageOtherTwo(statId);
     double current = state.stats[statId]!.points;
 
-    // Simple debuff if >20% above average
+    // ------------------------------
+    // Debuff if >20% above average
+    // ------------------------------
     if (current > avg * 1.20) {
       multiplier *= 0.5;
     }
 
-    // Duplication Lite check
-    bool hasDuplication = state.upgrades
-        .any((u) => u.id == "dupe_lite" && u.purchased);
+    // ------------------------------
+    // Duplication Lite scaling
+    // ------------------------------
+    if (state.duplicationLevel > 0) {
+      double chance = 0.05 + (state.duplicationLevel * 0.02);
 
-    if (hasDuplication && (DateTime.now().millisecondsSinceEpoch % 10 == 0)) {
-      // super simple 10% chance
-      base *= 2;
+      if (Random().nextDouble() < chance) {
+        base *= 2; // duplicate click
+      }
     }
 
+    // ------------------------------
+    // Final Add
+    // ------------------------------
     state.stats[statId]!.add(base * multiplier);
 
+    // Events & updates
     events.maybeTriggerEvent();
     state.notifyListeners();
   }
 
+  // ----------------------------------------
+  //   PASSIVE GENERATION LOOP
+  // ----------------------------------------
+  void _startPassiveLoop() {
+    passiveTimer?.cancel();
+
+    passiveTimer = Timer.periodic(Duration(seconds: 1), (_) {
+      // Compassion passive
+      if (state.passiveCompLevel > 0) {
+        state.stats["compassion"]!.add(state.passiveCompLevel.toDouble());
+      }
+
+      // Competence passive
+      if (state.passiveCompeteLevel > 0) {
+        state.stats["competence"]!.add(state.passiveCompeteLevel.toDouble());
+      }
+
+      // Commitment passive
+      if (state.passiveCommitLevel > 0) {
+        state.stats["commitment"]!.add(state.passiveCommitLevel.toDouble());
+      }
+
+      state.notifyListeners();
+    });
+  }
+
+  // ----------------------------------------
+  //   UTILITY
+  // ----------------------------------------
   double _averageOtherTwo(String id) {
     var others = state.stats.values.where((s) => s.id != id).toList();
     return (others[0].points + others[1].points) / 2;
   }
 
-  // Start passive +1/sec to chosen stat
-  void startPassive(String statId) {
-    state.passiveTarget = statId;
+  void dispose() {
     passiveTimer?.cancel();
-    passiveTimer = Timer.periodic(Duration(seconds: 1), (_) {
-      if (state.passiveEnabled && state.passiveTarget != null) {
-        state.stats[state.passiveTarget]!.add(1);
-      }
-    });
   }
-
-
-
 }

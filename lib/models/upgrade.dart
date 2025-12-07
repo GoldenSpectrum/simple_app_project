@@ -4,6 +4,9 @@ enum UpgradeType {
   clickPower,
   passiveGenerator,
   duplicationLite,
+  passiveCompassion,
+  passiveCompetence,
+  passiveCommitment,
 }
 
 class Upgrade {
@@ -11,15 +14,23 @@ class Upgrade {
   final String name;
   final String description;
   final UpgradeType type;
-  final double cost;
-  bool purchased;
+
+  String costStat;       // "compassion" | "competence" | "commitment"
+  double baseCost;
+  int level;
 
   Upgrade({
     required this.id,
     required this.name,
     required this.description,
     required this.type,
-    required this.cost,
-    this.purchased = false,
+    required this.costStat,
+    this.baseCost = 10,
+    this.level = 0,
   });
+
+  double currentCost() {
+    // exponential cost growth
+    return baseCost * (1.5 * (level + 1));
+  }
 }

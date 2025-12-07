@@ -6,39 +6,58 @@ class UpgradeController {
 
   UpgradeController(this.state);
 
-  bool purchase(String upgradeId) {
-    final upgrade =
-    state.upgrades.firstWhere((u) => u.id == upgradeId, orElse: () => throw "Upgrade not found");
+  bool purchase(Upgrade upgrade) {
+    String statId = upgrade.costStat;
+    double cost = upgrade.currentCost();
 
-    if (upgrade.purchased) return false;
+    if (state.stats[statId]!.points < cost) return false;
 
-    // Use total points as currency
-    if (state.totalPoints() < upgrade.cost) return false;
+    // Deduct cost
+    state.stats[statId]!.points -= cost;
 
-    // Deduct cost equally from all 3 stats (simple currency model)
-    final deduction = upgrade.cost / 3;
-    state.stats.values.forEach((s) => s.points -= deduction);
+    // Increase level
+    upgrade.level++;
 
-    upgrade.purchased = true;
-
-    _applyUpgradeEffect(upgrade);
+    // Apply the effect
+    _applyEffect(upgrade);
 
     state.notifyListeners();
     return true;
   }
 
-  void _applyUpgradeEffect(Upgrade u) {
-    switch (u.type) {
+  void _applyEffect(Upgrade up) {
+    switch (up.type) {
       case UpgradeType.clickPower:
+      // increase base click value for all stats
         state.stats.values.forEach((s) => s.clickValue += 1);
         break;
 
+    // Legacy single passive generator (if your enum still has this)
       case UpgradeType.passiveGenerator:
-        state.passiveEnabled = true;
+      // If you have the single passive variant, apply it to compassion level as fallback.
+      // You can change this mapping if you prefer a different default stat.
+        state.passiveCompLevel++;
+        break;
+
+    // Per-stat passive upgrades (preferred)
+      case UpgradeType.passiveCompassion:
+        state.passiveCompLevel++;
+        break;
+
+      case UpgradeType.passiveCompetence:
+        state.passiveCompeteLevel++;
+        break;
+
+      case UpgradeType.passiveCommitment:
+        state.passiveCommitLevel++;
         break;
 
       case UpgradeType.duplicationLite:
-      // GameController will check for this flag
+        state.duplicationLevel++;
+        break;
+
+      default:
+      // Safety: if a new enum value appears, do nothing (or log)
         break;
     }
   }

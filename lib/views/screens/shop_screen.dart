@@ -16,25 +16,44 @@ class ShopScreen extends StatelessWidget {
         title: Text("Upgrade Shop"),
         backgroundColor: Colors.deepPurple,
       ),
+
       body: ListView(
         padding: EdgeInsets.all(16),
         children: state.upgrades.map((u) {
           return Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 3,
             child: ListTile(
-              title: Text(u.name),
-              subtitle: Text(u.description),
-              trailing: u.purchased
-                  ? Icon(Icons.check, color: Colors.green)
-                  : ElevatedButton(
+              title: Text(
+                "${u.name} (Lvl ${u.level})",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 6.0),
+                child: Text(
+                  "${u.description}\n"
+                      "Cost: ${u.currentCost().toStringAsFixed(0)} ${u.costStat} points",
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+
+              trailing: ElevatedButton(
                 onPressed: () {
-                  bool ok = upgradeCtrl.purchase(u.id);
+                  bool ok = upgradeCtrl.purchase(u);
+
                   if (!ok) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Not enough points")),
+                      SnackBar(content: Text("Not enough ${u.costStat} points")),
                     );
                   }
                 },
-                child: Text("Buy (${u.cost.toStringAsFixed(0)})"),
+                child: Text("Buy"),
               ),
             ),
           );
