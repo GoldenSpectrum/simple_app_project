@@ -1,9 +1,14 @@
 import 'dart:math';
+import 'dart:async';
 import '../models/game_state.dart';
 
 class EventController {
   final GameState state;
   final Random rng = Random();
+
+  // NEW: Stream for event popups
+  final StreamController<String> _eventStream = StreamController.broadcast();
+  Stream<String> get eventStream => _eventStream.stream;
 
   EventController(this.state);
 
