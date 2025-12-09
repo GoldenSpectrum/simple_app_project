@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tomasino_tycoon/views/screens/shop_screen.dart';
 
-import '../../../controllers/game_controller.dart';
-import '../../../controllers/event_controller.dart';
-import '../../../models/game_state.dart';
-import '../../views/widgets/event_popup.dart';
+import 'package:tomasino_tycoon/views/screens/shop_screen.dart';
+import 'package:tomasino_tycoon/controllers/game_controller.dart';
+import 'package:tomasino_tycoon/models/game_state.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -13,30 +11,77 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  Stream<String>? eventStream;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  // ============================================================
+  // SPAGHETTI OVERLAY POPUP (Guaranteed 100% visible)
+  // ============================================================
+  void showOverlayPopup(String message) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
 
-    // Listen to event popups once
-    final eventController = Provider.of<EventController>(context);
-
-    eventStream ??= eventController.eventStream;
-    eventStream!.listen((msg) => _showPopup(msg));
-  }
-
-  void _showPopup(String message) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (_) => EventPopup(message: message),
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        top: 100,
+        left: 0,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFFD700),
+                    Color(0xFFFFC107),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
+
+    overlay.insert(entry);
+
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      entry.remove();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<GameState>(context);
+    final game = Provider.of<GameController>(context, listen: false);
+
+    // ============================================================
+    // SHOW POPUP WHEN AN EVENT MESSAGE EXISTS
+    // ============================================================
+    if (state.lastEventMessage.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showOverlayPopup(state.lastEventMessage);
+        state.lastEventMessage = ""; // clear after showing
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -47,9 +92,6 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 3,
       ),
 
-      // ------------------------------------
-      // CLEANER, NICER LAYOUT
-      // ------------------------------------
       body: Column(
         children: [
           const SizedBox(height: 25),
@@ -57,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
           // Total points
           Text(
             "Total Points: ${state.totalPoints().toStringAsFixed(0)}",
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 10),
@@ -65,21 +107,50 @@ class _MainScreenState extends State<MainScreen> {
           // Total clicks
           Text(
             "Total Clicks: ${state.totalClicks}",
-            style: TextStyle(fontSize: 16, color: Colors.black54),
+            style: const TextStyle(fontSize: 16, color: Colors.black54),
           ),
 
           const SizedBox(height: 25),
 
-          // Buttons neatly spaced
+          // MAIN CLICK BUTTONS
           _buildStatButton(context, "compassion", Colors.pinkAccent),
           _buildStatButton(context, "competence", Colors.green),
           _buildStatButton(context, "commitment", Colors.orange),
 
           const Spacer(),
 
-          // -------------------------
-          // Shop Button (Bottom Bar)
-          // -------------------------
+          // ============================================================
+          // GRADUATE BUTTON (Prestige)
+          // ============================================================
+          if (state.stats.values
+              .every((s) => s.points.round() >= state.prestigeRequirement))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SizedBox(
+                width: 240,
+                height: 55,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () {
+                    game.attemptPrestige();
+                    showOverlayPopup("🎓 You Graduated! +10% Click Power!");
+                  },
+                  child: const Text(
+                    "Graduate",
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+
+          // ============================================================
+          // SHOP BUTTON
+          // ============================================================
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: SizedBox(
@@ -91,7 +162,6 @@ class _MainScreenState extends State<MainScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  padding: EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -99,7 +169,7 @@ class _MainScreenState extends State<MainScreen> {
                     MaterialPageRoute(builder: (_) => ShopScreen()),
                   );
                 },
-                child: Text(
+                child: const Text(
                   "Open Shop",
                   style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
@@ -111,9 +181,9 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // ------------------------------------
-  // BUTTON BUILDER
-  // ------------------------------------
+  // ============================================================
+  // STAT BUTTON BUILDER
+  // ============================================================
   Widget _buildStatButton(BuildContext context, String id, Color color) {
     final game = Provider.of<GameController>(context, listen: false);
     final stat = Provider.of<GameState>(context).getStat(id);
@@ -134,11 +204,14 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(stat.name,
-                  style: TextStyle(fontSize: 24, color: Colors.white)),
+              Text(
+                stat.name,
+                style: const TextStyle(fontSize: 24, color: Colors.white),
+              ),
               Text(
                 "${stat.points.toStringAsFixed(0)} pts",
-                style: TextStyle(fontSize: 18, color: Colors.white70),
+                style:
+                const TextStyle(fontSize: 18, color: Colors.white70),
               ),
             ],
           ),

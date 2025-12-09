@@ -3,6 +3,9 @@ import 'stat.dart';
 import 'upgrade.dart';
 
 class GameState extends ChangeNotifier {
+  // ============================
+  // CORE CLICKER STATS
+  // ============================
   Map<String, Stat> stats = {
     "compassion": Stat(id: "compassion", name: "Compassion"),
     "competence": Stat(id: "competence", name: "Competence"),
@@ -12,33 +15,47 @@ class GameState extends ChangeNotifier {
   int totalClicks = 0;
   int clicksSinceEvent = 0;
 
-  double permanentClickBonus = 0.0; // prestige bonus
+  // ============================
+  // PRESTIGE SYSTEM
+  // ============================
+  int prestigeLevel = 0;
 
-  // NEW: Passive generator levels (infinite upgradeable)
+  // Permanent click multiplier (10% per prestige)
+  double get prestigeBonus => prestigeLevel * 0.10;
+
+  // Requirement to graduate (prestige)
+  double prestigeRequirement = 20;
+
+  // This gets updated after prestige
+  double permanentClickBonus = 0.0;
+
+
+  // ============================
+  // UPGRADE LEVELS
+  // (These reset to 0 on prestige)
+  // ============================
   int passiveCompLevel = 0;
   int passiveCompeteLevel = 0;
   int passiveCommitLevel = 0;
 
-  // NEW: Duplication upgrade level
   int duplicationLevel = 0;
 
-  // NEW: Infinite upgrades list
+
+  // ============================
+  // UPGRADES (Infinite scalable)
+  // ============================
   List<Upgrade> upgrades = [
-    // -------------------------------
-    // CLICK POWER UPGRADES
-    // -------------------------------
+    // CLICK POWER
     Upgrade(
       id: "click_power",
       name: "Click Power",
       description: "Increase all click values permanently.",
       type: UpgradeType.clickPower,
-      costStat: "compassion",    // paid with Compassion points
+      costStat: "compassion",
       baseCost: 30,
     ),
 
-    // -------------------------------
     // PASSIVE GENERATORS
-    // -------------------------------
     Upgrade(
       id: "passive_compassion",
       name: "Passive: Compassion",
@@ -66,9 +83,7 @@ class GameState extends ChangeNotifier {
       baseCost: 20,
     ),
 
-    // -------------------------------
-    // DUPLICATION LITE
-    // -------------------------------
+    // DUPLICATION
     Upgrade(
       id: "duplication_lite",
       name: "Duplication Lite",
@@ -79,15 +94,23 @@ class GameState extends ChangeNotifier {
     ),
   ];
 
+
+  // ============================
+  // EVENT LOG (optional screen)
+  // ============================
   List<String> eventLog = [];
 
 
-  // Helper
+  // ============================
+  // HELPERS
+  // ============================
   Stat getStat(String id) => stats[id]!;
 
   double totalPoints() {
     return stats.values.fold(0, (sum, s) => sum + s.points);
   }
+
+  String lastEventMessage = "";
 
   void notifyAll() {
     for (var s in stats.values) {

@@ -14,7 +14,7 @@ class EventController {
 
   // Called by GameController every time a stat is clicked
   void maybeTriggerEvent() {
-    if (state.clicksSinceEvent < 50) return;
+    if (state.clicksSinceEvent < 10) return;
 
     // Reset counter
     state.clicksSinceEvent = 0;
@@ -32,6 +32,12 @@ class EventController {
     // OPTIONAL: later we will show popup/dialog
     // For now, logic only
 
-    state.eventLog.add("Alumni event boosted $chosen by +10!");
+    state.lastEventMessage = "Alumni boosted $chosen +10!";
+    print("EVENT FIRED: Alumni boosted $chosen +10!");
   }
+
+  void sendCustomEvent(String message) {
+    _eventStream.add(message);
+  }
+
 }
