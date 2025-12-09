@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import '../models/game_state.dart';
-import '../models/upgrade.dart';
+import 'persistence_controller.dart';
 import 'event_controller.dart';
 
 class GameController {
@@ -9,9 +9,11 @@ class GameController {
   final EventController events;
 
   Timer? passiveTimer;
+  Timer? autosaveTimer;
 
   GameController(this.state, this.events) {
     _startPassiveLoop();
+    _startAutoSave();
   }
 
   // ============================================================
@@ -143,7 +145,54 @@ class GameController {
     return (others[0].points + others[1].points) / 2;
   }
 
+  // ============================================================
+  //   PERSISTENCE
+  // ============================================================
+  void _startAutoSave() {
+    autosaveTimer?.cancel();
+    autosaveTimer = Timer.periodic(Duration(seconds: 10), (_) {
+      PersistenceController().saveGame(state);
+    });
+    print("AUTO-SAVE STARTED");
+  }
+
+  // ============================================================
+  //   REGRESSION
+  // ============================================================
+  Future<void> fullReset() async {
+    // 1) Wipe saved data
+    await PersistenceController().wipeSave();
+
+    // 2) Reset GameState fully
+    state.stats["compassion"]!.points = 0;
+    state.stats["competence"]!.points = 0;
+    state.stats["commitment"]!.points = 0;
+
+    state.totalClicks = 0;
+    state.clicksSinceEvent = 0;
+
+    state.passiveCompLevel = 0;
+    state.passiveCompeteLevel = 0;
+    state.passiveCommitLevel = 0;
+    state.duplicationLevel = 0;
+
+    state.prestigeLevel = 0;
+    state.permanentClickBonus = 0.0;
+
+    for (var u in state.upgrades) {
+      u.level = 0;
+    }
+
+    // 3) Notify UI
+    state.notifyListeners();
+
+    print("FULL RESET COMPLETE!");
+  }
+
+
+
   void dispose() {
     passiveTimer?.cancel();
+    autosaveTimer?.cancel();
   }
 }

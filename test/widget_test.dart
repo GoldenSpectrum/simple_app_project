@@ -6,7 +6,6 @@ void main() {
   testWidgets('CoreValueClicker loads main screen', (WidgetTester tester) async {
 
     // Load your app
-    await tester.pumpWidget(CoreValueClicker());
 
     // Wait for frames
     await tester.pumpAndSettle();

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:tomasino_tycoon/utils/helpers.dart';
 import '../../../controllers/upgrade_controller.dart';
 import '../../../models/game_state.dart';
 import '../../../models/upgrade.dart';
@@ -19,45 +19,71 @@ class ShopScreen extends StatelessWidget {
 
       body: ListView(
         padding: EdgeInsets.all(16),
-        children: state.upgrades.map((u) {
-          return Card(
-            shape: RoundedRectangleBorder(
+        children: [
+          // ================================
+          //   STATS HEADER ROW (NEW)
+          // ================================
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
               borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 3,
-            child: ListTile(
-              title: Text(
-                "${u.name} (Lvl ${u.level})",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6.0),
-                child: Text(
-                  "${u.description}\n"
-                      "Cost: ${u.currentCost().toStringAsFixed(0)} ${u.costStat} points",
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-
-              trailing: ElevatedButton(
-                onPressed: () {
-                  bool ok = upgradeCtrl.purchase(u);
-
-                  if (!ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Not enough ${u.costStat} points")),
-                    );
-                  }
-                },
-                child: Text("Buy"),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                buildStatDisplay("❤️ Compassion", state.stats["compassion"]!.points),
+                buildStatDisplay("💚 Competence", state.stats["competence"]!.points),
+                buildStatDisplay("🧡 Commitment", state.stats["commitment"]!.points),
+              ],
             ),
-          );
-        }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ================================
+          //   UPGRADE LIST
+          // ================================
+          ...state.upgrades.map((u) {
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+              child: ListTile(
+                title: Text(
+                  "${u.name} (Lvl ${u.level})",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child: Text(
+                    "${u.description}\n"
+                        "Cost: ${u.currentCost().toStringAsFixed(0)} ${u.costStat} points",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+
+                trailing: ElevatedButton(
+                  onPressed: () {
+                    bool ok = upgradeCtrl.purchase(u);
+
+                    if (!ok) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Not enough ${u.costStat} points")),
+                      );
+                    }
+                  },
+                  child: Text("Buy"),
+                ),
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }

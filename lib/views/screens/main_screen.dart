@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'buff_screen.dart';
 import 'package:tomasino_tycoon/views/screens/shop_screen.dart';
 import 'package:tomasino_tycoon/controllers/game_controller.dart';
 import 'package:tomasino_tycoon/models/game_state.dart';
@@ -11,9 +11,8 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-
   // ============================================================
-  // SPAGHETTI OVERLAY POPUP (Guaranteed 100% visible)
+  // OVERLAY POPUP (Guaranteed visible)
   // ============================================================
   void showOverlayPopup(String message) {
     final overlay = Overlay.of(context);
@@ -31,10 +30,7 @@ class _MainScreenState extends State<MainScreen> {
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFFD700),
-                    Color(0xFFFFC107),
-                  ],
+                  colors: [Color(0xFFFFD700), Color(0xFFFFC107)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -62,24 +58,49 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     overlay.insert(entry);
-
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      entry.remove();
-    });
+    Future.delayed(Duration(milliseconds: 1800), () => entry.remove());
   }
 
+  // ============================================================
+  // REUSABLE MENU BUTTON BUILDER
+  // ============================================================
+  Widget _menuButton({
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: SizedBox(
+        width: 240,
+        height: 55,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+          ),
+          onPressed: onPressed,
+          child: Text(label,
+              style: const TextStyle(fontSize: 20, color: Colors.white)),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // MAIN BUILD
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<GameState>(context);
     final game = Provider.of<GameController>(context, listen: false);
 
-    // ============================================================
-    // SHOW POPUP WHEN AN EVENT MESSAGE EXISTS
-    // ============================================================
+    // Popup trigger
     if (state.lastEventMessage.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showOverlayPopup(state.lastEventMessage);
-        state.lastEventMessage = ""; // clear after showing
+        state.lastEventMessage = "";
       });
     }
 
@@ -92,99 +113,125 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 3,
       ),
 
-      body: Column(
-        children: [
-          const SizedBox(height: 25),
+      // ==============================
+      // SCROLLABLE BODY ✔ NO OVERFLOWS
+      // ==============================
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              // ==========================
+              // HEADER
+              // ==========================
+              Text(
+                "Total Points: ${state.totalPoints().toStringAsFixed(0)}",
+                style:
+                const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Total Clicks: ${state.totalClicks}",
+                style:
+                const TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
 
-          // Total points
-          Text(
-            "Total Points: ${state.totalPoints().toStringAsFixed(0)}",
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-          ),
+              // ==========================
+              // CLICK BUTTONS
+              // ==========================
+              _buildStatButton(context, "compassion", Colors.pinkAccent),
+              _buildStatButton(context, "competence", Colors.green),
+              _buildStatButton(context, "commitment", Colors.orange),
 
-          const SizedBox(height: 10),
+              const SizedBox(height: 25),
 
-          // Total clicks
-          Text(
-            "Total Clicks: ${state.totalClicks}",
-            style: const TextStyle(fontSize: 16, color: Colors.black54),
-          ),
-
-          const SizedBox(height: 25),
-
-          // MAIN CLICK BUTTONS
-          _buildStatButton(context, "compassion", Colors.pinkAccent),
-          _buildStatButton(context, "competence", Colors.green),
-          _buildStatButton(context, "commitment", Colors.orange),
-
-          const Spacer(),
-
-          // ============================================================
-          // GRADUATE BUTTON (Prestige)
-          // ============================================================
-          if (state.stats.values
-              .every((s) => s.points.round() >= state.prestigeRequirement))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: SizedBox(
-                width: 240,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
+              // ==========================
+              // GRADUATE BUTTON
+              // ==========================
+              if (state.stats.values
+                  .every((s) => s.points.round() >= state.prestigeRequirement))
+                _menuButton(
+                  label: "Graduate",
+                  color: Colors.redAccent,
                   onPressed: () {
                     game.attemptPrestige();
                     showOverlayPopup("🎓 You Graduated! +10% Click Power!");
                   },
-                  child: const Text(
-                    "Graduate",
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
                 ),
-              ),
-            ),
 
-          // ============================================================
-          // SHOP BUTTON
-          // ============================================================
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: SizedBox(
-              width: 240,
-              height: 55,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+              // ==========================
+              // BUFF SCREEN
+              // ==========================
+              _menuButton(
+                label: "View Buffs",
+                color: Colors.deepPurpleAccent,
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ShopScreen()),
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => BuffScreen()));
+                },
+              ),
+
+              // ==========================
+              // SHOP
+              // ==========================
+              _menuButton(
+                label: "Open Shop",
+                color: Colors.deepPurple,
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => ShopScreen()));
+                },
+              ),
+
+              // ==========================
+              // DELETE SAVE
+              // ==========================
+              _menuButton(
+                label: "Delete Save Data",
+                color: Colors.redAccent,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text("Reset Game?"),
+                      content: Text(
+                          "This will permanently delete ALL progress.\n\n"
+                              "Are you sure?"),
+                      actions: [
+                        TextButton(
+                          child: Text("Cancel"),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        TextButton(
+                          child: Text("Delete Save",
+                              style: TextStyle(color: Colors.red)),
+                          onPressed: () async {
+                            await game.fullReset();
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Game data wiped!")));
+                          },
+                        ),
+                      ],
+                    ),
                   );
                 },
-                child: const Text(
-                  "Open Shop",
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
               ),
-            ),
+
+              const SizedBox(height: 30),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   // ============================================================
-  // STAT BUTTON BUILDER
+  // STAT BUTTON BUILDER (unchanged)
   // ============================================================
-  Widget _buildStatButton(BuildContext context, String id, Color color) {
+  Widget _buildStatButton(
+      BuildContext context, String id, Color color) {
     final game = Provider.of<GameController>(context, listen: false);
     final stat = Provider.of<GameState>(context).getStat(id);
 
@@ -196,23 +243,18 @@ class _MainScreenState extends State<MainScreen> {
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: () => game.onStatClicked(id),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                stat.name,
-                style: const TextStyle(fontSize: 24, color: Colors.white),
-              ),
-              Text(
-                "${stat.points.toStringAsFixed(0)} pts",
-                style:
-                const TextStyle(fontSize: 18, color: Colors.white70),
-              ),
+              Text(stat.name,
+                  style: const TextStyle(fontSize: 24, color: Colors.white)),
+              Text("${stat.points.toStringAsFixed(0)} pts",
+                  style: const TextStyle(
+                      fontSize: 18, color: Colors.white70)),
             ],
           ),
         ),
