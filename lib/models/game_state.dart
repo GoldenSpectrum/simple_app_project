@@ -24,7 +24,7 @@ class GameState extends ChangeNotifier {
   double get prestigeBonus => prestigeLevel * 0.10;
 
   // Requirement to graduate (prestige)
-  double prestigeRequirement = 20;
+  double prestigeRequirement = 200;
 
   // This gets updated after prestige
   double permanentClickBonus = 0.0;

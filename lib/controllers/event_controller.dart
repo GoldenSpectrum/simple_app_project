@@ -14,7 +14,7 @@ class EventController {
 
   // Called by GameController every time a stat is clicked
   void maybeTriggerEvent() {
-    if (state.clicksSinceEvent < 10) return;
+    if (state.clicksSinceEvent < 50) return;
 
     // Reset counter
     state.clicksSinceEvent = 0;
